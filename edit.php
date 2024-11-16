@@ -1,83 +1,71 @@
 <?php
+// error_reporting(E_ALL);
+// ini_set('display_errors',1);
 session_start();
-$error = "";
-$sukses = "";
-require_once('include/dbh.inc.php');
-
 if(!isset($_GET['id'])){
-    die('Data tidak dapat ditemukan');
+    die('ID does not exist');
 }
 // kalo access user bukan admin/dokter, redirect ke page daftar
-if($_SESSION['access'] != "admin" && $_SESSION['access'] != "doctor"){
+if($_SESSION['access'] != "admin" && $_SESSION['access'] != "dokter"){
     header('location: daftar.php');
 }
 
+require_once('include/dbh.inc.php');
 
 $id = $_GET['id'];
 // select semua data dr table daftar dimana value row  id == id
-$select = "SELECT * FROM daftar WHERE id = '$id' ";
-$result = mysqli_query($conn, $select);
+$select = "SELECT * FROM `daftar` WHERE id = '$id' ";
+$result = $conn->query($select);
 // kalo jumlah row lbh kecil dr 1, id ga ada di database
 if(mysqli_num_rows($result) < 1){
-    $error = "Data tidak ditemukan di dalam database";
+    die('ID is not in database');
 }
 // fetch data
-$data = mysqli_fetch_assoc($result);
+$data = $result->fetch_assoc();
+?>
+<?php
+require_once 'include/dbh.inc.php';
 
-$perusahaan = "";
-$nama = "";
-$dept = "";
-$diagnosa = "";
-$obat = "";
-$tindak = "";
-$keterangan = "";
-$keluhan = "";
-
-@$perusahaan = is_null($data['perusahaan']) == 1 ? "" : $data['perusahaan'];
-@$nama = is_null($data['nama']) == 1 ? "" : $data['nama'];
-@$dept = is_null($data['dept']) == 1 ? "" : $data['dept'];
-@$diagnosa = is_null($data['diagnosa']) == 1 ? "" : $data['diagnosa'];
-@$obat = is_null($data['obat']) == 1 ? "" : $data['obat'];
-@$tindak = is_null($data['tindak']) == 1 ? "" : $data['tindak'];
-@$keterangan = is_null($data['keterangan']) == 1 ? "" : $data['keterangan'];
-@$keluhan = is_null($data['keluhan']) == 1 ? "" : $data['keluhan'];
-
+$error = "";
+$sukses = "";
 // kalo id ada & edit di klik, store semua value post ke local variable
 if(isset($_GET['id']) && isset($_POST['edit'])){
     $id = $_GET['id'];
-    $waktu = $_POST["waktu"];
-    $nama = $_POST["nama"];
-    $lahir = $_POST["lahir"];
-    $berobat = $_POST["berobat"];
-    $diagnosa = $_POST["diagnosa"];
-    $obat = $_POST["obat"];
-    $tindak = $_POST["tindak"];
-    $perusahaan = $_POST["perusahaan"];
-    $nik = $_POST["nik"];
-    $dept = $_POST["dept"];
-    $keterangan = $_POST["keterangan"];
-    $keluhan = $_POST["keluhan"];
+    $waktu = mysqli_real_escape_string($conn,$_POST["waktu"]);
+    $nama = mysqli_real_escape_string($conn,$_POST["nama"]);
+    $lahir = mysqli_real_escape_string($conn,$_POST["lahir"]);
+    $berobat = mysqli_real_escape_string($conn,$_POST["berobat"]);
+    $diagnosa = mysqli_real_escape_string($conn,$_POST["diagnosa"]);
+    $obat = mysqli_real_escape_string($conn,$_POST["obat"]);
+    $tindak = mysqli_real_escape_string($conn,$_POST["tindak"]);
+    $perusahaan = mysqli_real_escape_string($conn,$_POST["perusahaan"]);
+    $nik = mysqli_real_escape_string($conn,$_POST["nik"]);
+    $dept = mysqli_real_escape_string($conn,$_POST["dept"]);
+    $keterangan = mysqli_real_escape_string($conn,$_POST["keterangan"]);
+    $keluhan = mysqli_real_escape_string($conn,$_POST["keluhan"]);
+    $dokter = mysqli_real_escape_string($conn,$_POST["dokter"]);
     // update query buat update table daftar
-    $updateDaftar = "UPDATE daftar SET
-                waktu = '$waktu',
-                nama = '$nama',
-                lahir = '$lahir',
-                berobat = '$berobat',
-                diagnosa = '$diagnosa',
-                obat = '$obat',
-                tindak = '$tindak',
-                perusahaan = '$perusahaan',
-                nik = '$nik',
-                dept = '$dept',
-                keterangan = '$keterangan',
-                keluhan = '$keluhan'
+    $updateDaftar = "UPDATE `daftar` SET
+                `waktu` = '$waktu',
+                `nama` = '$nama',
+                `lahir` = '$lahir',
+                `berobat` = '$berobat',
+                `diagnosa` = '$diagnosa',
+                `obat` = '$obat',
+                `tindak` = '$tindak',
+                `perusahaan` = '$perusahaan',
+                `nik` = '$nik',
+                `dept` = '$dept',
+                `keterangan` = '$keterangan',
+                `keluhan` = '$keluhan',
+                `dokter` = '$dokter'
                 WHERE id = '$id' ";
     // execute query, kalo berhasil display success message
     if(mysqli_query($conn, $updateDaftar) == true){
         $sukses = "Data pasien berhasil di update";
     }else{
         // kalo gagal display error message
-        $error = "Data paseien gagal di update. Error: " . mysqli_connect_error();
+        $error = "Data paseien gagal di update. Error: " . $conn->error;
     }
 }
 ?>
@@ -88,6 +76,7 @@ if(isset($_GET['id']) && isset($_POST['edit'])){
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="icon" type="image/jpg" href="image/clinic-logo-bg.jpg">
     <title>Edit</title>
     <style>
     @media(max-width: 768px){
@@ -139,78 +128,81 @@ if(isset($_GET['id']) && isset($_POST['edit'])){
                             </div>
                         </div>
                         <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
+                            <!-- input field perusahaan -->
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <label for="perusahaan" class="form-label fs-sm">Perusahaan</label>
+                                <input type="text" class="form-control fs-sm" id="perusahaan" name="perusahaan" value="<?php echo $data['perusahaan'] ?>">
+                            </div>
+                        </div>
+                        <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
                             <!-- input field waktu -->
                             <div class="col-lg-6 col-md-6 col-sm-6 mb-sm-0 mb-2">
                                 <label for="waktu" class="form-label fs-sm">Time</label>
                                 <input type="time" class="form-control fs-sm" id="waktu" name="waktu" value="<?php echo $data['waktu'] ?>">
                             </div>
-                            <!-- input field nik -->
-                            <div class="col-lg-6 col-md-6 col-sm-6">
-                                <label for="nik" class="form-label fs-sm">Employee ID</label>
-                                <input type="number" class="form-control fs-sm" id="nik" name="nik" value="<?php echo $data['nik'] ?>">
-                            </div>
-                        </div>
-                        <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
-                            <!-- input field perusahaan -->
-                            <div class="col-lg-6 col-md-6 col-sm-6 mb-sm-0 mb-2">
-                                <label for="perusahaan" class="form-label fs-sm">Company</label>
-                                <input type="text" class="form-control fs-sm" id="perusahaan" name="perusahaan" value="<?php echo $perusahaan ?>">
-                            </div>
                             <!-- input field nama -->
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <label for="nama" class="form-label fs-sm">Full Name</label>
-                                <input type="text" class="form-control fs-sm" id="nama" name="nama" value="<?php echo $nama ?>">
+                                <input type="text" class="form-control fs-sm" id="nama" name="nama" value="<?php echo $data['nama'] ?>">
                             </div>
                         </div>
                         <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
                             <!-- input field tgl lahir -->
                             <div class="col-lg-6 col-md-6 col-sm-6 mb-sm-0 mb-2">
                                 <label for="lahir" class="form-label fs-sm">Birth Date</label>
-                                <input type="date" class="form-control fs-sm" id="lahir" name="lahir" value="<?php echo $lahir ?>">
+                                <input type="date" class="form-control fs-sm" id="lahir" name="lahir" value="<?php echo $data['lahir'] ?>">
                             </div>
                             <!-- input field departemen -->
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <label for="dept" class="form-label fs-sm">Department</label>
-                                <input type="text" class="form-control fs-sm" id="dept" name="dept" value="<?php echo $dept ?>">
+                                <input type="text" class="form-control fs-sm" id="dept" name="dept" value="<?php echo $data['dept'] ?>">
                             </div>
                         </div>
                         <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
                             <!-- input field diagnosa -->
                             <div class="col-lg-6 col-md-6 col-sm-6 mb-sm-0 mb-2">
-                                <label for="diagnosa" class="form-label fs-sm">Diagnose</label>
-                                <input type="text" class="form-control fs-sm" id="diagnosa" name="diagnosa" value="<?php echo $diagnosa ?>">
+                                <label for="diagnosa" class="form-label fs-sm">Diagnosis</label>
+                                <input type="text" class="form-control fs-sm" id="diagnosa" name="diagnosa" placeholder="Input Diagnosis" value="<?php echo $data['diagnosa'] ?>">
                             </div>
                             <!-- input field obat -->
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <label for="obat" class="form-label fs-sm">Medicine</label>
-                                <input type="text" class="form-control fs-sm" id="obat" name="obat" value="<?php echo $obat ?>">
+                                <input type="text" class="form-control fs-sm" id="obat" name="obat" placeholder="Input Medicine" value="<?php echo $data['obat'] ?>">
                             </div>
                         </div>
                         <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
                             <!-- input field tindakan -->
                             <div class="col-lg-12 col-md-12 col-sm-12">
                                 <label for="tindak" class="form-label fs-sm">Action</label>
-                                <input type="text" class="form-control fs-sm" id="tindak" name="tindak" value="<?php echo $tindak ?>">
+                                <input type="text" class="form-control fs-sm" id="tindak" name="tindak" placeholder="Input Action" value="<?php echo $data['tindak'] ?>">
                             </div>
                         </div>
                         <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
                             <!-- input field keterangan -->
                             <div class="col-lg-12 col-md-12 col-sm-12">
                                 <label for="keterangan" class="form-label fs-sm">Description</label>
-                                <input type="text" class="form-control fs-sm" id="keterangan" name="keterangan" value="<?php echo $keterangan ?>">
+                                <input type="text" class="form-control fs-sm" id="keterangan" name="keterangan" placeholder="Input Description" value="<?php echo $data['keterangan'] ?>">
+                            </div>
+                        </div>
+                        <div class="row px-sm-4 px-0 mb-sm-3 mb-2">
+                            <!-- input field dokter -->
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <label for="dokter" class="form-label fs-sm">Doctor</label>
+                                <input type="text" class="form-control fs-sm" id="dokter" name="dokter" placeholder="Input Doctor Name" value="<?php echo $data['dokter'] ?>">
                             </div>
                         </div>
                         <div class="row px-sm-4 px-0 my-sm-3 my-2">
                             <!-- text area keluhan -->
                             <div class="col-lg-12 col-md-12 col-sm-12">
                                 <label for="keluhan" class="form-label fs-sm">Complaints</label>
-                                <textarea class="form-control fs-sm" id="keluhan" name="keluhan" rows="3"><?php echo htmlspecialchars($keluhan); ?></textarea>
+                                <textarea class="form-control fs-sm" id="keluhan" name="keluhan" rows="3"><?php echo htmlspecialchars($data['keluhan']); ?></textarea>
+                                <div class="form-text">*To enter a new line please press "Enter" or "Shift + Enter"</div>
                             </div>
                         </div>
                         <div class="row justify-content-end px-sm-4 px-0 my-3">
                             <div class="d-grid col-6">
                                 <!-- edit modal trigger -->
-                                <button class="btn btn-warning fs-sm" type="button" data-bs-toggle="modal" data-bs-target="#editModal">Edit</button>
+                                <button class="btn btn-primary fs-sm" type="button" data-bs-toggle="modal" data-bs-target="#editModal">Edit</button>
                                 <div class="modal fade" id="editModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -225,7 +217,7 @@ if(isset($_GET['id']) && isset($_POST['edit'])){
                                                 <!-- cancel button -->
                                                 <button class="btn btn-secondary fs-sm" type="button" data-bs-dismiss="modal">Cancel</button>
                                                 <!-- edit button -->
-                                                <button class="btn btn-warning fs-sm" type="submit" name="edit">Edit</button>
+                                                <button class="btn btn-primary fs-sm" type="submit" name="edit">Ok</button>
                                             </div>
                                         </div>
                                     </div>

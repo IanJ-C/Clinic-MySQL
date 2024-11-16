@@ -1,45 +1,34 @@
 <?php
-session_start();
+// error_reporting(E_ALL);
+// ini_set('display_errors',1);
+include 'include/dbh.inc.php';
 $error = "";
 $sukses = "";
-// kalo access bukan admin/doctor, redirect ke page daftar
-if($_SESSION['access'] != "admin" && $_SESSION['access'] != "doctor"){
-    header('location: daftar.php');
-}
-// kalo access == doctor, redirect ke page history dokter
-elseif($_SESSION['access'] == "doctor"){
-    header('location: history_dokter.php');
-}
 // cek kalo button buat user di klik
 if(isset($_POST["regis"])){
     $error = "";
-    include 'include/dbh.inc.php';
     // store semua value yg di post ke local variable
-    $email = $_POST["email"];
-    $passwd = $_POST["passwd"];
-    $access = $_POST["access"];
+    $email = mysqli_real_escape_string($conn,$_POST["email"]);
+    $passwd = mysqli_real_escape_string($conn,$_POST["passwd"]);
+    $access = mysqli_real_escape_string($conn,$_POST["access"]);
     // select semua data dari table credentials dimana value row email == email & execute query
     $select = "SELECT * FROM credentials WHERE email = '$email' ";
     $result = mysqli_query($conn, $select);
-    // cek kalo email tidak valid, display error message
-    if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
-        $error = "Email tidak valid";
+
+    // kalo jumlah row lbh dr 0, email sudah terdaftar
+    if(mysqli_num_rows($result) > 0){
+        $error = "User have been registered";
     }else{
-        // kalo jumlah row lbh dr 0, email sudah terdaftar
-        if(mysqli_num_rows($result) > 0){
-            $error = "User sudah terdaftar";
+        // sql statement buat insert ke table credentials
+        $sql = "INSERT INTO `credentials` (`email`,`passwd`,`access`) VALUES ('$email','$passwd','$access')";
+        // execute query, kalo berhasil display sukses message
+        if(mysqli_query($conn, $sql) == true){
+            $sukses = "New User registered successfully";
         }else{
-            // sql statement buat insert ke table credentials
-            $sql = "INSERT INTO credentials (email, passwd, access) VALUES ('$email','$passwd','$access')";
-            // execute query, kalo berhasil display sukses message
-            if(mysqli_query($conn, $sql) == true){
-                $sukses = "User baru berhasil didaftarkan";
-            }else{
-                $error = "Error: " . mysqli_connect_error($conn);
-            }
+            $error = "Error: " . $conn->error;
         }
     }
-    mysqli_close($conn);
+    $conn->close();
 }
 ?>
 <!DOCTYPE html>
@@ -48,7 +37,8 @@ if(isset($_POST["regis"])){
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <title>Buat User Baru</title>
+    <link rel="icon" type="image/jpg" href="image/clinic-logo-bg.jpg">
+    <title>Create New User</title>
 </head>
 <body>
     <div class="container my-5 p-5">
@@ -81,8 +71,8 @@ if(isset($_POST["regis"])){
                         ?>
                         <!-- input field email -->
                         <div class="col-lg-12 px-4 mt-3 mb-4">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email">
+                            <label for="email" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="email" name="email">
                         </div>
                         <!-- input field password -->
                         <div class="col-lg-12 px-4 mb-4">
@@ -95,7 +85,7 @@ if(isset($_POST["regis"])){
                             <select name="access" id="access" class="form-select">
                                 <option selected>Choose access type</option>
                                 <option value="admin">Admin</option>
-                                <option value="doctor">Doctor</option>
+                                <option value="dokter">Doctor</option>
                             </select>
                         </div>
                         <div class="d-grid col-lg-12 px-4 mt-5 mb-2">

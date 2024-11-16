@@ -16,5 +16,5 @@ if($currentUser == "" || $currentPass == ""){
     header('location: index.php');
 }
 
-$query = "SELECT * FROM daftar WHERE email = '".$currentUser."' ";
+$query = "SELECT * FROM daftar WHERE email = '$currentUser' ";
 $result = mysqli_query($conn,$query);
